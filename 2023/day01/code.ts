@@ -10,8 +10,8 @@ const lines = input.split("\n");
 let arrayOfDigits: number[] = [];
 
 for (const line of lines) {
-  const replacedNumbers = line.replace(wordRegex, (match) => {
-    return match
+  const replacedNumbers = line.replace(wordRegex, (match) =>
+    match
       .replace("one", "1")
       .replace("two", "2")
       .replace("three", "3")
@@ -20,8 +20,8 @@ for (const line of lines) {
       .replace("six", "6")
       .replace("seven", "7")
       .replace("eight", "8")
-      .replace("nine", "9");
-  });
+      .replace("nine", "9")
+  );
 
   const numbers = replacedNumbers.match(numberRegex);
 
