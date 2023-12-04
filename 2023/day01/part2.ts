@@ -22,7 +22,7 @@ function replaceStringWithNumber(str: string) {
 }
 
 for (const line of lines) {
-  var mock,
+  let mock,
     numbers = [];
 
   while ((mock = wordRegex.exec(line))) {
