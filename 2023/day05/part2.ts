@@ -26,11 +26,25 @@ enum TypeOfMaps {
   humidityToLocation = "humidity-to-location map:",
 }
 
-let inputData: number[] = [];
+let ranges: any = {};
+
+function* generateRange(start: number, count: number) {
+  for (let i = 0; i < count; i++) {
+    yield start + i;
+  }
+}
 
 lines.forEach((line) => {
   if (line.includes("seeds:")) {
-    inputData = extractNumbersFromString(line);
+    const seedNumbers = extractNumbersFromString(line);
+
+    for (let i = 0; i < seedNumbers.length; i += 2) {
+      const start = seedNumbers[i];
+      const count = seedNumbers[i + 1] || 0;
+
+      let variableName = `range${i / 2}`;
+      ranges[variableName] = generateRange(start, count);
+    }
   }
 
   switch (line) {
@@ -73,55 +87,71 @@ lines.forEach((line) => {
   }
 });
 
-function convertFromTo(sectionArray: any) {
-  inputData.forEach((inputNumber, index) => {
-    let changedNumber = inputNumber;
-    for (let i = 0; i < sectionArray.length; i++) {
-      const destinationRange = sectionArray[i][0];
-      const sourceRange = sectionArray[i][1];
-      const range = sectionArray[i][2];
+function convertFromTo(sectionArray: any, value: number) {
+  for (let i = 0; i < sectionArray.length; i++) {
+    const destinationRange = sectionArray[i][0];
+    const sourceRange = sectionArray[i][1];
+    const range = sectionArray[i][2];
 
-      const lastSource = sourceRange + range - 1;
+    const lastSource = sourceRange + range - 1;
 
-      if (inputNumber < sourceRange) continue;
+    if (value < sourceRange) continue;
 
-      if (inputNumber > lastSource) continue;
+    if (value > lastSource) continue;
 
-      const delta = destinationRange - sourceRange; // 50 - 50 = 0
+    const delta = destinationRange - sourceRange;
 
-      changedNumber = inputNumber + delta; // 79 + 0 = 79
-    }
+    return value + delta;
+  }
 
-    inputData[index] = changedNumber;
-  });
+  return value;
 }
 
+let range0 = ranges["range0"];
+let nextValue = range0.next();
+
+let min = null;
+
 const time1 = performance.now();
-console.log("started with converting", time1);
-convertFromTo(sections[TypeOfMaps.seedToSoil]);
-const time2 = performance.now();
-console.log("seedToSoil", time2 - time1);
-convertFromTo(sections[TypeOfMaps.soilToFertilizer]);
-const time3 = performance.now();
-console.log("soilToFertilizer", time3 - time2);
-convertFromTo(sections[TypeOfMaps.fertilizerToWater]);
-const time4 = performance.now();
-console.log("fertilizerToWater", time4 - time3);
-convertFromTo(sections[TypeOfMaps.waterToLight]);
-const time5 = performance.now();
-console.log("waterToLight", time5 - time4);
-convertFromTo(sections[TypeOfMaps.lightToTemperature]);
-const time6 = performance.now();
-console.log("lightToTemperature", time6 - time5);
-convertFromTo(sections[TypeOfMaps.temperatureToHumidity]);
-const time7 = performance.now();
-console.log("temperatureToHumidity", time7 - time6);
-convertFromTo(sections[TypeOfMaps.humidityToLocation]);
+console.log("started...");
+while (!nextValue.done) {
+  const seedToSoil = convertFromTo(
+    sections[TypeOfMaps.seedToSoil],
+    nextValue.value
+  );
+  const soilToFertilizer = convertFromTo(
+    sections[TypeOfMaps.soilToFertilizer],
+    seedToSoil
+  );
+  const fertilizerToWater = convertFromTo(
+    sections[TypeOfMaps.fertilizerToWater],
+    soilToFertilizer
+  );
+  const waterToLight = convertFromTo(
+    sections[TypeOfMaps.waterToLight],
+    fertilizerToWater
+  );
+  const lightToTemperature = convertFromTo(
+    sections[TypeOfMaps.lightToTemperature],
+    waterToLight
+  );
+  const temperatureToHumidity = convertFromTo(
+    sections[TypeOfMaps.temperatureToHumidity],
+    lightToTemperature
+  );
+  const humidityToLocation = convertFromTo(
+    sections[TypeOfMaps.humidityToLocation],
+    temperatureToHumidity
+  );
+
+  if (min === null) min = humidityToLocation;
+
+  if (humidityToLocation < min) min = humidityToLocation;
+
+  nextValue = range0.next();
+}
 const time8 = performance.now();
-console.log("humidityToLocation", time8 - time7);
 
 console.log("total time", time8 - time1);
 
-console.log(inputData);
-
-console.log(Math.min(...inputData));
+console.log(min);
